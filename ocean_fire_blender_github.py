@@ -11,7 +11,7 @@ from mathutils import Vector
 from concurrent.futures import ProcessPoolExecutor
 
 # ====================== USER SETTINGS ======================
-AUDIO_PATH = r"/home/jordan/Documents/Blender_scripts/10_sec.wav"
+AUDIO_PATH = r"/home/jordan/Documents/Blender_scripts/1_20s.wav"
 OUTPUT_DIR = r"/home/jordan/Desktop/"
 OUTPUT_FILE = "fire_ocean_visible.mp4"
 
@@ -19,8 +19,8 @@ RES_X, RES_Y = 256,256
 FPS = 23
 
 SCENE_DURATION_PAD = None
-SCENE_MIN_SECONDS = 6.0
-SIM_WARMUP_FRAMES = 96
+SCENE_MIN_SECONDS = 5.0
+SIM_WARMUP_FRAMES = 0
 
 # --- REALISM BOOST: INCREASED FIDELITY AND SAMPLES ---
 DOMAIN_RESOLUTION = 256
@@ -81,7 +81,7 @@ BLACKBODY_INTENSITY = 4.0
 MINIMUM_SMOKE_DENSITY = 0.02
 
 # --- SIMULATION REALISM TWEAKS ---
-DOMAIN_VORTICITY = 1.5
+DOMAIN_VORTICITY = 2.0
 
 # --- LIGHTING FIXES FOR SPARKS/RIPPLES ---
 CEILING_LIGHT_POWER = 1500.0
@@ -497,10 +497,17 @@ def build_domain_and_flow():
     fs.flow_behavior = "INFLOW"
     fs.flow_source = "MESH"
     fs.surface_distance = 0.0
-    fs.temperature = 2.3
-    fs.fuel_amount = 2.6
+    fs.temperature = 2.6
+    fs.fuel_amount = 4.0
     fs.use_initial_velocity = True
     fs.velocity_normal = 2.0
+    if hasattr(fs, "temperature"):
+        fs.temperature = 2.6
+    else:
+        fs.temperature_difference = 2.0
+
+    _safe_set(fs, "velocity_normal", 3.0)
+
     if hasattr(fs, "velocity"):
         try: fs.velocity = (0.0, 0.0, 1.8)
         except Exception:
@@ -534,10 +541,14 @@ def build_domain_and_flow():
     d.domain_type = "GAS"
     # --- REALISM FIX: INCREASED RESOLUTION ---
     d.resolution_max = DOMAIN_RESOLUTION
-    d.use_adaptive_domain = True
+    d.use_adaptive_domain = False
     # --- REALISM FIX: ADDED NOISE AND VORTICITY ---
     d.use_noise = True
     d.vorticity = DOMAIN_VORTICITY
+    if hasattr(d, "noise_scale"):
+        d.noise_scale = 1
+    if hasattr(d, "noise_strength"):
+        d.noise_strength = 0.6
 
     # --- SWITCH TO MODULAR CACHE FOR BAKING ---
     d.cache_type = 'MODULAR'
@@ -548,7 +559,7 @@ def build_domain_and_flow():
     os.makedirs(cache_dir, exist_ok=True)
     if hasattr(d, 'cache_directory'):
         d.cache_directory = cache_dir
-    d.time_scale = 0.85
+    d.time_scale = 1.1
 
     print(f"Domain adjusted: height={domain_height:.2f}, radius={domain_radius:.2f}, centerZ={domain_center_z:.2f}")
     return domain, flow
